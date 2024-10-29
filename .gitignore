@@ -1,5 +1,4 @@
 .env
 node_modules
-conexion.js
 configuration
 .env.local
