@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-export function encryptPassword(password) {
+export const encryptPassword = (password) => {
     const algorithm = 'aes-256-ctr';
     const secretKey = process.env.ENCRYPTION_KEY;
     const iv = crypto.randomBytes(16);

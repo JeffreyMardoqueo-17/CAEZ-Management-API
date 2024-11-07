@@ -11,6 +11,7 @@ import { GetConnection } from "../DataBase/contection/Conexion";
  *
  * @returns {Promise} Una promesa que se resuelve con el resultado de la consulta.
  */
+
 export const executeQuery = async (query, parameters = []) => {
     try {
         const pool = await GetConnection();
@@ -19,9 +20,9 @@ export const executeQuery = async (query, parameters = []) => {
         return await request.query(query);
     } catch (error) {
         console.error('Error al ejecutar la consulta: ' + error);
+        throw error;
     }
 };
-
 /**
  * Ejecuta una consulta SQL con parámetros incrustados en la cadena de consulta.
  *

@@ -15,6 +15,7 @@ import Users from './routers/User.routes';
 import cors from 'cors';
 
 // Carga las variables de entorno desde el archivo .env.local
+dotenv.config({ path: '.env' });
 dotenv.config({ path: '.env.local' });
 
 const app = express();

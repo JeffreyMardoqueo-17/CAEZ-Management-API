@@ -4,11 +4,11 @@ import { ValidateCreateGrado, ValidateUpdateGrado } from '../validators/Grado.va
 import { validateToken } from '../helpers/JWT';
 
 const router = Router();
-//ya estan las validaciones d elos inputs solo faltan las del tocken
-router.get('/Grados', GetGrados);
-router.get('/Grados/:id', GetGradoPorId);
-router.post('/Grados', ValidateCreateGrado, PostGrado);
-router.put('/Grados/:id', ValidateUpdateGrado, PutGrado);
-router.delete('/Grados/:id', DeleteGrado);
+
+router.get('/Grados', validateToken, GetGrados);
+router.get('/Grados/:id', validateToken, GetGradoPorId);
+router.post('/Grados', validateToken, ValidateCreateGrado, PostGrado);
+router.put('/Grados/:id', validateToken, ValidateUpdateGrado, PutGrado);
+router.delete('/Grados/:id', validateToken, DeleteGrado);
 
 export default router;

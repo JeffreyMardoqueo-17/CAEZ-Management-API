@@ -3,6 +3,7 @@ import { executeQuery } from '../helpers/dbHelper';
 import sql from '../DataBase/contection/Conexion';
 import { verifyPassword } from '../helpers/verifyPassword';
 import { generateAndStoreToken } from '../helpers/GenerarToken';
+import { encryptPassword } from '../helpers/crypto';
 
 const UserController = {
     async getUsers(req, res) {
@@ -109,36 +110,48 @@ const UserController = {
      */
     async loginUser(req, res) {
         const { Login, Password } = req.body;
-        // Validaciones
         if (!Login || !Password) {
             return res.status(400).json({ msg: 'Login y Password son requeridos' });
         }
         try {
-            // Ejecutar el procedimiento almacenado para obtener el usuario por login
             const user = await executeQuery('EXEC SPUserLogin @Login', [
                 { name: 'Login', type: sql.NVarChar(100), value: Login }
             ]);
 
-            // Verificar si se encontró el usuario
             if (user.recordset.length === 0) {
                 return res.status(404).json({ msg: 'Usuario no encontrado o no activo' });
             }
+
             const userData = user.recordset[0];
-            // Verificar si `Password` está disponible en los datos del usuario
-            if (!userData.Password) {
-                console.error("La contraseña encriptada no está disponible en userData.");
-                return res.status(500).json({ msg: 'Error interno: la contraseña no se encuentra disponible.' });
-            }
-            // Verificar si la contraseña es correcta
             const isPasswordCorrect = verifyPassword(Password, userData.Password);
             if (!isPasswordCorrect) {
                 return res.status(400).json({ msg: 'Contraseña incorrecta' });
             }
 
-            // Generar el token JWT
-            const token = generateAndStoreToken(userData.Id);
+            // Verificar si el usuario ya tiene una sesión activa
+            const activeSession = await executeQuery(
+                'SELECT * FROM Session WHERE UserId = @UserId AND ExpiresAt > GETDATE() AND IsActive = 1',
+                [{ name: 'UserId', type: sql.Int, value: userData.Id }]
+            );
 
-            // Enviar la respuesta con el token y los datos del usuario
+            if (activeSession.recordset.length > 0) {
+                return res.status(400).json({ msg: 'Ya tienes una sesión activa' });
+            }
+
+            // Generar el token y la fecha de expiración (6 horas)
+            const token = generateAndStoreToken(userData.Id);
+            const expiresAt = new Date(Date.now() + 6 * 60 * 60 * 1000); // 6 horas
+
+            // Guardar el token en la tabla Session
+            await executeQuery(
+                'INSERT INTO Session (UserId, Token, CreatedAt, ExpiresAt, IsActive) VALUES (@UserId, @Token, GETDATE(), @ExpiresAt, 1)',
+                [
+                    { name: 'UserId', type: sql.Int, value: userData.Id },
+                    { name: 'Token', type: sql.NVarChar, value: token },
+                    { name: 'ExpiresAt', type: sql.DateTime, value: expiresAt }
+                ]
+            );
+
             res.status(200).json({
                 msg: 'Inicio de sesión exitoso',
                 token,
@@ -149,14 +162,39 @@ const UserController = {
                     login: userData.Login,
                     status: userData.Status,
                     registrationDate: userData.RegistrationDate,
-                    role: userData.IdRole  // Puedes añadir más campos si es necesario
+                    role: userData.IdRole
                 }
             });
         } catch (error) {
             console.error(`Error al iniciar sesión: ${error}`);
             res.status(500).json({ msg: 'Error al iniciar sesión', error: error.message });
         }
+    },
+
+    async logoutUser(req, res) {
+        try {
+            console.log("req.user:", req.user);
+            console.log("req.token:", req.token);
+
+            if (!req.user || !req.user.id) {
+                return res.status(400).json({ msg: 'No se pudo identificar el usuario para cerrar sesión' });
+            }
+
+            const userId = req.user.id;
+
+            // Marcar la sesión como inactiva en lugar de eliminarla
+            await executeQuery('UPDATE Session SET IsActive = 0 WHERE UserId = @UserId AND Token = @Token', [
+                { name: 'UserId', type: sql.Int, value: userId },
+                { name: 'Token', type: sql.NVarChar, value: req.token }
+            ]);
+
+            res.status(200).json({ msg: 'Sesión cerrada exitosamente' });
+        } catch (error) {
+            console.error(`Error al cerrar sesión: ${error}`);
+            res.status(500).json({ msg: 'Error al cerrar sesión', error: error.message });
+        }
     }
+
 };
 
 export default UserController;
