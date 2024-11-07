@@ -83,6 +83,18 @@ CREATE TABLE [User] (
     IdRole INT NOT NULL FOREIGN KEY REFERENCES [Role](Id)
 );
 GO
+GO
+--------Tbla para almacenar las sesiones
+CREATE TABLE [Session] (
+    Id INT NOT NULL PRIMARY KEY IDENTITY(1, 1),
+    UserId INT NOT NULL FOREIGN KEY REFERENCES [User](Id),
+    Token NVARCHAR(MAX) NOT NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    ExpiresAt DATETIME NOT NULL,
+    IsActive BIT NOT NULL DEFAULT 1
+);
+GO
+
 
 -- TABLA Padrino
 CREATE TABLE Padrino (
@@ -172,3 +184,4 @@ CREATE TABLE AuditLog (
     DatosNuevos NVARCHAR(MAX) 
 );
 GO
+

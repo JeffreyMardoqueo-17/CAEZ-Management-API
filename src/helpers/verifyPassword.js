@@ -8,25 +8,22 @@ import crypto from 'crypto';
  * @returns {boolean} - Devuelve `true` si la contraseña es correcta, `false` en caso contrario.
  */
 export function verifyPassword(password, encryptedPassword) {
-    // Divide la contraseña encriptada en el vector de inicialización (IV) y el texto encriptado.
-    const [iv, encrypted] = encryptedPassword.split(':');
+    try {
+        const [ivHex, encrypted] = encryptedPassword.split(':');
+        if (!ivHex || !encrypted) {
+            console.error("Formato de contraseña encriptada no válido.");
+            return false;
+        }
 
-    // Define el algoritmo de cifrado utilizado y la clave secreta para el desciframiento.
-    const algorithm = 'aes-256-ctr';
-    const secretKey = 'vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3'; // Esta clave debe ser almacenada de forma segura.
+        const algorithm = 'aes-256-ctr';
+        const secretKey = process.env.ENCRYPTION_KEY; // La misma clave que en `encryptPassword`
 
-    // Crea un descifrador utilizando el algoritmo, la clave secreta y el vector de inicialización.
-    const decipher = crypto.createDecipheriv(algorithm, Buffer.from(secretKey), Buffer.from(iv, 'hex'));
+        const decipher = crypto.createDecipheriv(algorithm, Buffer.from(secretKey), Buffer.from(ivHex, 'hex'));
+        const decrypted = Buffer.concat([decipher.update(Buffer.from(encrypted, 'hex')), decipher.final()]);
 
-    // Descifra el texto encriptado y concatena los fragmentos para obtener el texto original.
-    const decrypted = Buffer.concat([decipher.update(Buffer.from(encrypted, 'hex')), decipher.final()]);
-
-    // Compara la contraseña ingresada con la contraseña descifrada. Retorna `true` si coinciden.
-    if (decrypted.toString() === password) {
-        console.log("Contraseña verificada correctamente. Usuario logueado.");
-        return true;
-    } else {
-        console.log("Contraseña incorrecta. Verificación fallida.");
+        return decrypted.toString() === password;
+    } catch (error) {
+        console.error("Error al verificar la contraseña:", error);
         return false;
     }
 }

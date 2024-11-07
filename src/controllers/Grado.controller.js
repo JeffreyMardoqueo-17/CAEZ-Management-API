@@ -5,16 +5,10 @@ import sql from 'mssql';
  * Obtener todos los grados.
  * @param {Object} req - El objeto de solicitud de Express.
  * @param {Object} res - El objeto de respuesta de Express.
- * @example
- * // Probar en Thunder Client:
- * // Obtener todos los grados
- * GET http://localhost:3000/grados
- * 
- * // Respuesta:
- * // [{ "Id": 1, "Nombre": "Grado A", "Colegiatura": 100.00 }, ...]
  */
 export const GetGrados = async (req, res) => {
     try {
+        // Llama al procedimiento almacenado SPGradosGet sin parámetros para obtener todos los grados
         const result = await executeQuery('EXEC SPGradosGet');
         res.status(200).json(result.recordset);
     } catch (error) {
@@ -27,18 +21,12 @@ export const GetGrados = async (req, res) => {
  * Obtener un grado por su ID.
  * @param {Object} req - El objeto de solicitud de Express.
  * @param {Object} res - El objeto de respuesta de Express.
- * @example
- * // Probar en Thunder Client:
- * // Obtener grado por ID
- * GET http://localhost:3000/grados/1
- * 
- * // Respuesta:
- * // { "Id": 1, "Nombre": "Grado A", "Colegiatura": 100.00 }
  */
 export const GetGradoPorId = async (req, res) => {
     const { id } = req.params;
     try {
-        const result = await executeQuery('EXEC SPGetGradosPorId @Id', [{ name: 'Id', type: sql.Int, value: id }]);
+        // Llama al procedimiento almacenado SPGradosGet con el parámetro Id para obtener el grado específico
+        const result = await executeQuery('EXEC SPGradosGet @Id', [{ name: 'Id', type: sql.Int, value: id }]);
         if (result.recordset.length > 0) {
             res.status(200).json(result.recordset[0]);
         } else {
@@ -54,29 +42,16 @@ export const GetGradoPorId = async (req, res) => {
  * Crear un nuevo grado.
  * @param {Object} req - El objeto de solicitud de Express.
  * @param {Object} res - El objeto de respuesta de Express.
- * @example
- * // Probar en Thunder Client:
- * // Crear nuevo grado
- * POST http://localhost:3000/grados
- * 
- * // Cuerpo de la solicitud:
- * {
- *   "Nombre": "Nuevo Grado",
- *   "Colegiatura": 150.00
- * }
- * 
- * // Respuesta:
- * // { "msg": "Grado creado correctamente", "id": 3 }
  */
 export const PostGrado = async (req, res) => {
-    const { Nombre, Colegiatura } = req.body;
-    if (!Nombre || Colegiatura === undefined) {
-        return res.status(400).json({ msg: 'Nombre y Colegiatura son requeridos' });
+    const { Nombre } = req.body;
+    if (!Nombre) {
+        return res.status(400).json({ msg: 'Nombre es requerido' });
     }
     try {
-        const result = await executeQuery('EXEC SPGradosCreate @Nombre, @Colegiatura', [
-            { name: 'Nombre', type: sql.VarChar(50), value: Nombre },
-            { name: 'Colegiatura', type: sql.Decimal(10, 2), value: Colegiatura }
+        // Llama al procedimiento almacenado SPGradosCreate con el parámetro Nombre para crear un nuevo grado
+        const result = await executeQuery('EXEC SPGradosCreate @Nombre', [
+            { name: 'Nombre', type: sql.VarChar(50), value: Nombre }
         ]);
         res.status(201).json({ msg: 'Grado creado correctamente', id: result.recordset[0].Id });
     } catch (error) {
@@ -89,33 +64,25 @@ export const PostGrado = async (req, res) => {
  * Actualizar un grado existente.
  * @param {Object} req - El objeto de solicitud de Express.
  * @param {Object} res - El objeto de respuesta de Express.
- * @example
- * // Probar en Thunder Client:
- * // Actualizar grado
- * PUT http://localhost:3000/grados/1
- * 
- * // Cuerpo de la solicitud:
- * {
- *   "Nombre": "Grado Actualizado",
- *   "Colegiatura": 200.00
- * }
- * 
- * // Respuesta:
- * // { "msg": "Grado actualizado correctamente" }
  */
 export const PutGrado = async (req, res) => {
     const { id } = req.params;
-    const { Nombre, Colegiatura } = req.body;
-    if (!Nombre || Colegiatura === undefined) {
-        return res.status(400).json({ msg: 'Nombre y Colegiatura son requeridos' });
+    const { Nombre } = req.body;
+    if (!Nombre) {
+        return res.status(400).json({ msg: 'Nombre es requerido' });
     }
     try {
-        await executeQuery('EXEC SPGradosUpdate @Id, @Nombre, @Colegiatura', [
+        // Llama al procedimiento almacenado SPGradosUpdate con los parámetros Id y Nombre para actualizar el grado
+        const result = await executeQuery('EXEC SPGradosUpdate @Id, @Nombre', [
             { name: 'Id', type: sql.Int, value: id },
-            { name: 'Nombre', type: sql.VarChar(50), value: Nombre },
-            { name: 'Colegiatura', type: sql.Decimal(10, 2), value: Colegiatura }
+            { name: 'Nombre', type: sql.VarChar(50), value: Nombre }
         ]);
-        res.status(200).json({ msg: 'Grado actualizado correctamente' });
+
+        if (result.recordset.length > 0) {
+            res.status(200).json({ msg: 'Grado actualizado correctamente', updatedRecord: result.recordset[0] });
+        } else {
+            res.status(404).json({ msg: 'Grado no encontrado' });
+        }
     } catch (error) {
         console.error(`Error al actualizar el grado: ${error}`);
         res.status(500).json({ msg: 'Error al actualizar el grado' });
@@ -126,17 +93,11 @@ export const PutGrado = async (req, res) => {
  * Eliminar un grado por su ID.
  * @param {Object} req - El objeto de solicitud de Express.
  * @param {Object} res - El objeto de respuesta de Express.
- * @example
- * // Probar en Thunder Client:
- * // Eliminar grado por ID
- * DELETE http://localhost:3000/grados/1
- * 
- * // Respuesta:
- * // { "msg": "Grado eliminado correctamente" }
  */
 export const DeleteGrado = async (req, res) => {
     const { id } = req.params;
     try {
+        // Llama al procedimiento almacenado SPGradosDelete con el parámetro Id para eliminar el grado
         await executeQuery('EXEC SPGradosDelete @Id', [{ name: 'Id', type: sql.Int, value: id }]);
         res.status(200).json({ msg: 'Grado eliminado correctamente' });
     } catch (error) {
