@@ -5,10 +5,10 @@ import { ValidateCreateDireccion, ValidateUpdateDireccion } from '../validators/
 const route = Router();
 
 //qui ya esta listo, las validaciones ya estas, solo falta lo del tocken
-route.get('/Direcciones', GetDirecciones);
-route.get('/Direcciones/:id', GetDireccionPorId);
-route.post('/Direcciones', ValidateCreateDireccion, PostDireccion);
-route.delete('/Direcciones/:id', DeleteDireccion);
-route.put('/Direcciones/:id', ValidateUpdateDireccion, PutDireccion);
+route.get('/Direcciones', validateToken, GetDirecciones);
+route.get('/Direcciones/:id', validateToken, GetDireccionPorId);
+route.post('/Direcciones', validateToken, ValidateCreateDireccion, PostDireccion);
+route.delete('/Direcciones/:id', validateToken, DeleteDireccion);
+route.put('/Direcciones/:id', validateToken, ValidateUpdateDireccion, PutDireccion);
 
 export default route;

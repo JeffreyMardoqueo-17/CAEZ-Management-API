@@ -7,11 +7,11 @@ const route = Router();
 
 // Rutas
 //ya estan las validaciones d elos inputs solo faltan las del tocken
-route.get('/TiposPago', GetTiposPago);
-route.get('/TiposPago/:id', GetTipoPagoPorId);
-route.post('/TiposPago', ValidateCreateTipoPago, PostTipoPago);
-route.put('/TiposPago/:id', ValidateUpdateTipoPago, PutTipoPago);
-route.delete('/TiposPago/:id', DeleteTipoPago);
+route.get('/TiposPago', validateToken, GetTiposPago);
+route.get('/TiposPago/:id', validateToken, GetTipoPagoPorId);
+route.post('/TiposPago', validateToken, ValidateCreateTipoPago, PostTipoPago);
+route.put('/TiposPago/:id', validateToken, ValidateUpdateTipoPago, PutTipoPago);
+route.delete('/TiposPago/:id', validateToken, DeleteTipoPago);
 // route.post('/TiposPago/Buscar/',validateToken, BuscarTipoPagoPorTexto)
 
 export default route; 

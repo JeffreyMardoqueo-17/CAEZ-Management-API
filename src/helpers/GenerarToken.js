@@ -1,15 +1,12 @@
-import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 
-dotenv.config(); // Asegúrate de cargar las variables de entorno al inicio
+const JWT_SECRET = process.env.JWT_SECRET || 'default_jwt_secret';
 
-// Función para generar y devolver un token JWT
+/**
+ * Genera un token JWT para un usuario.
+ * @param {number} userId - ID del usuario.
+ * @returns {string} - Token JWT.
+ */
 export function generateAndStoreToken(userId) {
-    if (!process.env.JWT_SECRET) {
-        throw new Error("La clave JWT_SECRET no está definida en el archivo de entorno.");
-    }
-
-    // Genera el token con el ID del usuario en el payload y una duración de 6 horas
-    const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '6h' });
-    return token;
+    return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '6h' });
 }

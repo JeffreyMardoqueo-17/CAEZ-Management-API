@@ -112,55 +112,35 @@ BEGIN
     DELETE FROM [User]
     WHERE Id = @Id;
 END;
-GO
-CREATE PROCEDURE SPUserLogin
-    @Login NVARCHAR(100),
-    @Password NVARCHAR(100)  -- Contraseña en forma de hash
+GOCREATE PROCEDURE SPUserLogin
+    @Login NVARCHAR(100)
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
+        -- Iniciamos una transacción
         BEGIN TRANSACTION;
-        
-        DECLARE @UserId INT;
-        
-        -- Verifica si el usuario y la contraseña son correctos y si el usuario está activo
+
+        -- Devuelve la información del usuario (sin la contraseña)
         SELECT 
-            @UserId = Id
+            Id,
+            [Name],
+            LastName,
+            [Login],
+            [Password], -- Lo necesitamos para validar en el backend
+            [Status],
+            RegistrationDate,
+            IdRole
         FROM 
             [User]
         WHERE 
             [Login] = @Login 
-            AND [Password] = @Password
             AND [Status] = 1;  -- Solo permite usuarios activos
-
-        -- Si las credenciales son correctas, devuelve la información del usuario
-        IF @UserId IS NOT NULL
-        BEGIN
-            SELECT 
-                Id,
-                [Name],
-                LastName,
-                [Login],
-                [Status],
-                RegistrationDate,
-                IdRole
-            FROM 
-                [User]
-            WHERE 
-                Id = @UserId;
-        END
-        ELSE
-        BEGIN
-            -- Mensaje de error genérico si las credenciales no son correctas
-            SELECT 'Credenciales incorrectas' AS ErrorMessage;
-        END
 
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
         ROLLBACK TRANSACTION;
-        -- Manejo de errores, devuelve el mensaje de error de SQL Server
         SELECT ERROR_MESSAGE() AS ErrorMessage;
     END CATCH
 END;

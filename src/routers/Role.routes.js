@@ -5,10 +5,10 @@ import { ValidateCreateRole, ValidateUpdateRole } from '../validators/Role.valid
 
 const route = express.Router();
 
-route.get('/Role', GetRoles);
-route.get('/Role/:id', GetRolPorId);
-route.post('/Role', ValidateCreateRole, PostRol);
-route.put('/Role/:id', ValidateUpdateRole, PutRol);
-route.delete('/Role/:id', DeleteRol);
+route.get('/Role', validateToken, GetRoles);
+route.get('/Role/:id', validateToken, GetRolPorId);
+route.post('/Role', validateToken, ValidateCreateRole, PostRol);
+route.put('/Role/:id', validateToken, ValidateUpdateRole, PutRol);
+route.delete('/Role/:id', validateToken, DeleteRol);
 
 export default route;

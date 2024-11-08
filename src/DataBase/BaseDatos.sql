@@ -82,8 +82,7 @@ CREATE TABLE [User] (
     RegistrationDate DATETIME NOT NULL,
     IdRole INT NOT NULL FOREIGN KEY REFERENCES [Role](Id)
 );
-GO
-GO
+GO  
 --------Tbla para almacenar las sesiones
 CREATE TABLE [Session] (
     Id INT NOT NULL PRIMARY KEY IDENTITY(1, 1),
@@ -144,7 +143,6 @@ CREATE TABLE Alumno (
     RegistrationDate DATETIME NOT NULL
 );
 GO
-
 
 -- TABLA Pago
 CREATE TABLE Pago (

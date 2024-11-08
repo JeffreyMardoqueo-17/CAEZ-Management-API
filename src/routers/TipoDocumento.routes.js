@@ -7,10 +7,10 @@ const route = Router();
 
 // Rutas
 //ya estan las validaciones d elos inputs solo faltan las del tocken
-route.get('/TiposDocumento', GetTiposDocumento);
-route.get('/TiposDocumento/:id', GetTipoDocumentoPorId);
-route.post('/TiposDocumento', ValidateCreateTipoDoc, PostTipoDocumento);
-route.put('/TiposDocumento/:id', ValidateUpdateTipoDoc, PutTipoDocumento);
-route.delete('/TiposDocumento/:id', DeleteTipoDocumento);
+route.get('/TiposDocumento', validateToken, GetTiposDocumento);
+route.get('/TiposDocumento/:id', validateToken, GetTipoDocumentoPorId);
+route.post('/TiposDocumento', validateToken, ValidateCreateTipoDoc, PostTipoDocumento);
+route.put('/TiposDocumento/:id', validateToken, ValidateUpdateTipoDoc, PutTipoDocumento);
+route.delete('/TiposDocumento/:id', validateToken, DeleteTipoDocumento);
 
 export default route;

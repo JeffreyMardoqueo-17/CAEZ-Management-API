@@ -9,7 +9,6 @@ import TipoPago from './routers/TipoPago.routes';
 import Mes from './routers/Mes.routes';
 import Direcciones from './routers/Direcciones.routes';
 import Role from './routers/Role.routes';
-import Grupos from "./routers/Grupo.routes";
 import Sexo from './routers/Sexo.routes';
 import Users from './routers/User.routes';
 import cors from 'cors';
@@ -36,7 +35,6 @@ app.use(TipoPago);
 app.use(Mes);
 app.use(Direcciones);
 app.use(Role);
-app.use(Grupos);
 app.use(Sexo);
 app.use(Users);
 

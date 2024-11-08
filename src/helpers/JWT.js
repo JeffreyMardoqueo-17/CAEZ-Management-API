@@ -1,26 +1,22 @@
-// helpers/JWT.js
 import jwt from 'jsonwebtoken';
 import sql from 'mssql';
-import { executeQuery } from '../helpers/dbHelper'; // Ajusta la ruta según la ubicación real de tu archivo
+import { executeQuery } from './dbHelper';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'default_jwt_secret';
 
 export async function validateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
-    console.log("authHeader recibido:", authHeader); // Depuración
-
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ msg: 'Token no proporcionado o formato incorrecto' });
     }
 
     const token = authHeader.split(' ')[1];
-    console.log("Token extraído:", token); // Depuración
 
     try {
-        // Decodificar el token usando la clave secreta
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log("Token decodificado:", decoded); // Depuración
+        const decoded = jwt.verify(token, JWT_SECRET);
 
-        // Verificar que la sesión esté activa en la base de datos
-        const session = await executeQuery(
+        // Verificar si la sesión está activa en la base de datos
+        const sessionResult = await executeQuery(
             'SELECT * FROM Session WHERE UserId = @UserId AND Token = @Token AND ExpiresAt > GETDATE() AND IsActive = 1',
             [
                 { name: 'UserId', type: sql.Int, value: decoded.id },
@@ -28,15 +24,15 @@ export async function validateToken(req, res, next) {
             ]
         );
 
-        if (session.recordset.length === 0) {
-            return res.status(403).json({ msg: 'Token inválido o sesión expirada/inactiva' });
+        if (sessionResult.recordset.length === 0) {
+            return res.status(403).json({ msg: 'Sesión expirada o inválida' });
         }
 
         req.user = decoded;
         req.token = token;
         next();
     } catch (err) {
-        console.error("Error al validar el token:", err);
+        console.error("Error al validar el token:", err.message);
         return res.status(403).json({ msg: 'Token inválido' });
     }
 }
