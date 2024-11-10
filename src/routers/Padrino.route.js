@@ -4,7 +4,7 @@ import { validateToken } from '../helpers/JWT';
 
 const route = Router();
 
-route.get('/padrinos', validateToken, PadrinoController.getPadrinos);
+route.get('/padrinos', PadrinoController.getPadrinos);
 route.get('/padrinos/:id', validateToken, PadrinoController.getPadrinoById);
 route.post('/padrinos', validateToken, PadrinoController.createPadrino);
 route.put('/padrinos/:id', validateToken, PadrinoController.updatePadrino);
