@@ -94,7 +94,6 @@ CREATE TABLE [Session] (
 );
 GO
 
-
 -- TABLA Padrino
 CREATE TABLE Padrino (
     Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
@@ -124,6 +123,17 @@ CREATE TABLE Encargado (
     RegistrationDate DATETIME NOT NULL
 );
 GO
+---------auditoria para Encargado
+CREATE TABLE AuditoriaEncargado (
+    Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
+    FechaHora DATETIME NOT NULL DEFAULT GETDATE(), -- Fecha y hora de la operación
+    IdUsuario INT NOT NULL,                        -- ID del usuario que hizo la acción
+    Operacion NVARCHAR(10) NOT NULL,               -- Operación: INSERT, UPDATE, DELETE
+    IdRegistro INT,                                -- ID del registro en la tabla Encargado afectado
+    Detalles NVARCHAR(MAX)                         -- Detalles de la operación (campos antiguos y nuevos)
+);
+GO
+
 
 CREATE TABLE Alumno (
     Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
