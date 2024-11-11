@@ -31,8 +31,30 @@ const AuditoriaEncargadoController = {
             );
             res.status(200).json(result.recordset);
         } catch (error) {
-            console.error(`Error al obtener la auditoría de encargados en el rango de fechas: ${error}`);
+            console.error(`Error al obtener la auditoría en el rango de fechas: ${error}`);
             res.status(500).json({ msg: 'Error al obtener la auditoría en el rango de fechas' });
+        }
+    },
+
+    // Obtener registros de auditoría por fecha específica
+    async getAuditoriaBySpecificDate(req, res) {
+        const { specificDate } = req.query;
+
+        if (!specificDate) {
+            return res.status(400).json({ msg: 'El parámetro specificDate es requerido' });
+        }
+
+        try {
+            const result = await executeQuery(
+                'EXEC SPAuditoriaEncargadoGetBySpecificDate @SpecificDate',
+                [
+                    { name: 'SpecificDate', type: sql.DateTime, value: new Date(specificDate) }
+                ]
+            );
+            res.status(200).json(result.recordset);
+        } catch (error) {
+            console.error(`Error al obtener la auditoría por fecha específica: ${error}`);
+            res.status(500).json({ msg: 'Error al obtener la auditoría por fecha específica' });
         }
     }
 };
