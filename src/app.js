@@ -13,6 +13,7 @@ import Sexo from './routers/Sexo.routes';
 import Users from './routers/User.routes';
 import Padrino from './routers/Padrino.route';
 import Encargado from './routers/Encargado.routes'
+import AuditoriaEncargado from './routers/AuditoriaEncargado.routes'
 import cors from 'cors';
 
 // Carga las variables de entorno desde el archivo .env.local
@@ -40,7 +41,8 @@ app.use(Role);
 app.use(Sexo);
 app.use(Users);
 app.use(Padrino);
-app.use(Encargado)
+app.use(Encargado);
+app.use(AuditoriaEncargado);
 
 // Inicio del servidor
 app.listen(port, () => {
