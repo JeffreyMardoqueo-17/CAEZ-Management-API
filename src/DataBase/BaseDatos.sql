@@ -154,6 +154,16 @@ CREATE TABLE Alumno (
 );
 GO
 
+CREATE TABLE AuditoriaAlumno (
+    Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
+    FechaHora DATETIME NOT NULL DEFAULT GETDATE(),   -- Fecha y hora de la operación
+    IdUsuario INT NOT NULL,                          -- ID del usuario que hizo la acción
+    Operacion NVARCHAR(10) NOT NULL,                 -- Operación: INSERT, UPDATE, DELETE
+    IdRegistro INT,                                  -- ID del registro en la tabla Alumno afectado
+    Detalles NVARCHAR(MAX)                           -- Detalles de la operación (campos antiguos y nuevos)
+);
+GO
+
 -- TABLA Pago
 CREATE TABLE Pago (
     Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),

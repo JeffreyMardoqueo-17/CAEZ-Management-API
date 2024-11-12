@@ -10,7 +10,7 @@ CREATE PROCEDURE SPAlumnoCreate
     @IdTipoDocumento INT,
     @NumDocumento NVARCHAR(50),
     @EsBecado BIT,
-    @IdPadrino INT = NULL,
+    @IdPadrino INT = NULL, -- Permite null por defecto
     @IdAdministrador INT
 AS
 BEGIN
@@ -24,6 +24,7 @@ BEGIN
     SELECT SCOPE_IDENTITY() AS Id;
 END;
 GO
+
 CREATE PROCEDURE SPAlumnoGetAll
 AS
 BEGIN
@@ -130,7 +131,7 @@ CREATE PROCEDURE SPAlumnoUpdate
     @IdTipoDocumento INT,
     @NumDocumento NVARCHAR(50),
     @EsBecado BIT,
-    @IdPadrino INT = NULL,
+    @IdPadrino INT = NULL, -- Permite null por defecto
     @IdAdministrador INT
 AS
 BEGIN
@@ -159,6 +160,7 @@ BEGIN
     SELECT * FROM Alumno WHERE Id = @Id;
 END;
 GO
+
 CREATE PROCEDURE SPAlumnoDelete
     @Id INT
 AS
