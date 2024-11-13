@@ -73,7 +73,6 @@ const AlumnoController = {
             res.status(500).json({ msg: 'Error al crear el alumno', error: error.message });
         }
     },
-
     async updateAlumno(req, res) {
         const { id } = req.params;
         const {
@@ -83,18 +82,32 @@ const AlumnoController = {
         } = req.body;
 
         try {
-            // Verificar duplicados solo si NumDocumento es usado por otro Id
-            const duplicateCheck = await executeQuery(
-                'SELECT Id FROM Alumno WHERE NumDocumento = @NumDocumento AND Id <> @Id',
-                [
-                    { name: 'NumDocumento', type: sql.NVarChar(50), value: NumDocumento },
-                    { name: 'Id', type: sql.Int, value: id }
-                ]
+            // Primero, obtén el registro actual del alumno para verificar su NumDocumento
+            const currentAlumno = await executeQuery(
+                'SELECT NumDocumento FROM Alumno WHERE Id = @Id',
+                [{ name: 'Id', type: sql.Int, value: id }]
             );
 
-            // Si se encuentra un registro con el mismo NumDocumento y diferente Id, devolver error
-            if (duplicateCheck.recordset.length > 0) {
-                return res.status(400).json({ msg: 'Ya existe otro alumno con el mismo número de documento' });
+            if (currentAlumno.recordset.length === 0) {
+                return res.status(404).json({ msg: 'Alumno no encontrado' });
+            }
+
+            const currentNumDocumento = currentAlumno.recordset[0].NumDocumento;
+
+            // Solo verifica duplicados si el nuevo NumDocumento es diferente al actual
+            if (NumDocumento !== currentNumDocumento) {
+                const duplicateCheck = await executeQuery(
+                    'SELECT Id FROM Alumno WHERE NumDocumento = @NumDocumento AND Id <> @Id',
+                    [
+                        { name: 'NumDocumento', type: sql.NVarChar(50), value: NumDocumento },
+                        { name: 'Id', type: sql.Int, value: id }
+                    ]
+                );
+
+                // Si se encuentra un registro con el mismo NumDocumento y diferente Id, devolver error
+                if (duplicateCheck.recordset.length > 0) {
+                    return res.status(400).json({ msg: 'Ya existe otro alumno con el mismo número de documento' });
+                }
             }
 
             const IdAdministrador = req.user.id;
@@ -128,7 +141,6 @@ const AlumnoController = {
             res.status(500).json({ msg: 'Error al actualizar el alumno', error: error.message });
         }
     },
-
     async deleteAlumno(req, res) {
         const { id } = req.params;
         try {
