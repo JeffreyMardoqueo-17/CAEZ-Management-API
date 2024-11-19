@@ -254,3 +254,71 @@ BEGIN
         P.IdAlumno = @IdAlumno;
 END;
 GO
+
+--------------------ACTUALIZAR EN MASA
+
+CREATE TYPE AlumnoUpdateType AS TABLE (
+    Id INT NOT NULL,       -- ID del alumno a actualizar
+    IdGrado INT NULL,      -- Nuevo grado (puede ser NULL si no se actualiza)
+    IdTurno INT NULL       -- Nuevo turno (puede ser NULL si no se actualiza)
+);
+GO
+CREATE PROCEDURE SPAlumnoMassUpdate
+    @Updates AlumnoUpdateType READONLY,  -- Tabla con los datos a actualizar
+    @IdUsuario INT                      -- Usuario que realiza la acción
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Tabla temporal para registrar auditorías
+    DECLARE @Auditoria TABLE (
+        IdRegistro INT,
+        Campo NVARCHAR(50),
+        ValorAntiguo NVARCHAR(MAX),
+        ValorNuevo NVARCHAR(MAX)
+    );
+
+    -- Actualización de IdGrado
+    UPDATE A
+    SET IdGrado = U.IdGrado
+    OUTPUT 
+        Inserted.Id AS IdRegistro,
+        'IdGrado' AS Campo,
+        Deleted.IdGrado AS ValorAntiguo,
+        Inserted.IdGrado AS ValorNuevo
+    INTO @Auditoria
+    FROM Alumno AS A
+    INNER JOIN @Updates AS U ON A.Id = U.Id
+    WHERE U.IdGrado IS NOT NULL AND A.IdGrado <> U.IdGrado;
+
+    -- Actualización de IdTurno
+    UPDATE A
+    SET IdTurno = U.IdTurno
+    OUTPUT 
+        Inserted.Id AS IdRegistro,
+        'IdTurno' AS Campo,
+        Deleted.IdTurno AS ValorAntiguo,
+        Inserted.IdTurno AS ValorNuevo
+    INTO @Auditoria
+    FROM Alumno AS A
+    INNER JOIN @Updates AS U ON A.Id = U.Id
+    WHERE U.IdTurno IS NOT NULL AND A.IdTurno <> U.IdTurno;
+
+    -- Registrar cambios en la tabla de auditoría
+    INSERT INTO AuditoriaAlumno (FechaHora, IdUsuario, Operacion, IdRegistro, Detalles)
+    SELECT 
+        GETDATE() AS FechaHora,
+        @IdUsuario AS IdUsuario,
+        'UPDATE' AS Operacion,
+        A.IdRegistro,
+        CONCAT(
+            'Campo: ', A.Campo, 
+            ', Valor Antiguo: ', ISNULL(A.ValorAntiguo, 'NULL'), 
+            ', Valor Nuevo: ', ISNULL(A.ValorNuevo, 'NULL')
+        ) AS Detalles
+    FROM @Auditoria A;
+
+    -- Devolver los registros actualizados para validación
+    SELECT * FROM Alumno WHERE Id IN (SELECT Id FROM @Updates);
+END;
+GO

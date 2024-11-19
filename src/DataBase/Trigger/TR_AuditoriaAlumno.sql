@@ -5,102 +5,121 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @Operacion NVARCHAR(10), @IdRegistro INT, @IdUsuario INT, @Detalles NVARCHAR(MAX);
+    -- Detectar el tipo de operación
+    DECLARE @Operacion NVARCHAR(10);
 
-    -- Auditoría para INSERT
-    IF EXISTS (SELECT * FROM Inserted) AND NOT EXISTS (SELECT * FROM Deleted)
-    BEGIN
+    IF EXISTS (SELECT 1 FROM Inserted) AND EXISTS (SELECT 1 FROM Deleted)
+        SET @Operacion = 'UPDATE';
+    ELSE IF EXISTS (SELECT 1 FROM Inserted)
         SET @Operacion = 'INSERT';
+    ELSE IF EXISTS (SELECT 1 FROM Deleted)
+        SET @Operacion = 'DELETE';
 
+    -- INSERT: Registrar nuevos registros
+    IF @Operacion = 'INSERT'
+    BEGIN
         INSERT INTO AuditoriaAlumno (FechaHora, IdUsuario, Operacion, IdRegistro, Detalles)
         SELECT 
             GETDATE(),
-            i.IdAdministrador, -- ID del administrador que realiza la operación
+            i.IdAdministrador, -- Usuario que realizó la operación
             @Operacion,
             i.Id,
-            CONCAT(
-                'Nombre: ', QUOTENAME(i.Nombre, '"'),
-                ', Apellido: ', QUOTENAME(i.Apellido, '"'),
-                ', FechaNacimiento: ', CONVERT(NVARCHAR, i.FechaNacimiento, 120),
-                ', IdSexo: ', i.IdSexo,
-                ', IdRole: ', i.IdRole,
-                ', IdGrado: ', i.IdGrado,
-                ', IdTurno: ', i.IdTurno,
-                ', IdEncargado: ', i.IdEncargado,
-                ', IdTipoDocumento: ', i.IdTipoDocumento,
-                ', NumDocumento: ', QUOTENAME(i.NumDocumento, '"'),
-                ', EsBecado: ', i.EsBecado,
-                ', IdPadrino: ', COALESCE(CONVERT(NVARCHAR, i.IdPadrino), 'NULL')  -- Usa COALESCE para manejar NULL
-            ) AS Detalles
+            (SELECT 
+                'Operacion' AS TipoOperacion,
+                GETDATE() AS FechaHora,
+                i.IdAdministrador AS Usuario,
+                (SELECT 
+                    i.Nombre AS Nombre,
+                    i.Apellido AS Apellido,
+                    i.FechaNacimiento AS FechaNacimiento,
+                    i.IdSexo AS Sexo,
+                    i.IdRole AS Role,
+                    i.IdGrado AS Grado,
+                    i.IdTurno AS Turno,
+                    i.IdEncargado AS Encargado,
+                    i.IdTipoDocumento AS TipoDocumento,
+                    i.NumDocumento AS NumeroDocumento,
+                    i.EsBecado AS Becado,
+                    COALESCE(i.IdPadrino, NULL) AS Padrino
+                 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS Detalles
+             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)
         FROM Inserted i;
     END
 
-    -- Auditoría para UPDATE
-    IF EXISTS (SELECT * FROM Inserted) AND EXISTS (SELECT * FROM Deleted)
+    -- UPDATE: Registrar cambios en los registros
+    IF @Operacion = 'UPDATE'
     BEGIN
-        SET @Operacion = 'UPDATE';
-
         INSERT INTO AuditoriaAlumno (FechaHora, IdUsuario, Operacion, IdRegistro, Detalles)
         SELECT 
             GETDATE(),
-            i.IdAdministrador, -- ID del administrador que realiza la operación
+            i.IdAdministrador, -- Usuario que realizó la operación
             @Operacion,
             i.Id,
-            CONCAT(
-                'Antiguo -> Nombre: ', QUOTENAME(d.Nombre, '"'),
-                ', Apellido: ', QUOTENAME(d.Apellido, '"'),
-                ', FechaNacimiento: ', CONVERT(NVARCHAR, d.FechaNacimiento, 120),
-                ', IdSexo: ', d.IdSexo,
-                ', IdRole: ', d.IdRole,
-                ', IdGrado: ', d.IdGrado,
-                ', IdTurno: ', d.IdTurno,
-                ', IdEncargado: ', d.IdEncargado,
-                ', IdTipoDocumento: ', d.IdTipoDocumento,
-                ', NumDocumento: ', QUOTENAME(d.NumDocumento, '"'),
-                ', EsBecado: ', d.EsBecado,
-                ', IdPadrino: ', COALESCE(CONVERT(NVARCHAR, d.IdPadrino), 'NULL'), -- Valor anterior de IdPadrino
-                ' | Nuevo -> Nombre: ', QUOTENAME(i.Nombre, '"'),
-                ', Apellido: ', QUOTENAME(i.Apellido, '"'),
-                ', FechaNacimiento: ', CONVERT(NVARCHAR, i.FechaNacimiento, 120),
-                ', IdSexo: ', i.IdSexo,
-                ', IdRole: ', i.IdRole,
-                ', IdGrado: ', i.IdGrado,
-                ', IdTurno: ', i.IdTurno,
-                ', IdEncargado: ', i.IdEncargado,
-                ', IdTipoDocumento: ', i.IdTipoDocumento,
-                ', NumDocumento: ', QUOTENAME(i.NumDocumento, '"'),
-                ', EsBecado: ', i.EsBecado,
-                ', IdPadrino: ', COALESCE(CONVERT(NVARCHAR, i.IdPadrino), 'NULL') -- Valor nuevo de IdPadrino
-            ) AS Detalles
+            (SELECT 
+                'Operacion' AS TipoOperacion,
+                GETDATE() AS FechaHora,
+                i.IdAdministrador AS Usuario,
+                (SELECT 
+                    d.Nombre AS Antes,
+                    i.Nombre AS Despues
+                 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS Nombre,
+                (SELECT 
+                    d.Apellido AS Antes,
+                    i.Apellido AS Despues
+                 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS Apellido,
+                (SELECT 
+                    CONVERT(NVARCHAR, d.FechaNacimiento, 120) AS Antes,
+                    CONVERT(NVARCHAR, i.FechaNacimiento, 120) AS Despues
+                 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS FechaNacimiento,
+                (SELECT 
+                    d.IdGrado AS Antes,
+                    i.IdGrado AS Despues
+                 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS Grado,
+                (SELECT 
+                    d.IdTurno AS Antes,
+                    i.IdTurno AS Despues
+                 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS Turno,
+                (SELECT 
+                    d.NumDocumento AS Antes,
+                    i.NumDocumento AS Despues
+                 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS NumeroDocumento,
+                (SELECT 
+                    d.EsBecado AS Antes,
+                    i.EsBecado AS Despues
+                 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS Becado
+             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)
         FROM Inserted i
         INNER JOIN Deleted d ON i.Id = d.Id;
     END
 
-    -- Auditoría para DELETE
-    IF NOT EXISTS (SELECT * FROM Inserted) AND EXISTS (SELECT * FROM Deleted)
+    -- DELETE: Registrar eliminación de registros
+    IF @Operacion = 'DELETE'
     BEGIN
-        SET @Operacion = 'DELETE';
-
         INSERT INTO AuditoriaAlumno (FechaHora, IdUsuario, Operacion, IdRegistro, Detalles)
         SELECT 
             GETDATE(),
-            d.IdAdministrador, -- ID del administrador que realiza la operación
+            d.IdAdministrador, -- Usuario que realizó la operación
             @Operacion,
             d.Id,
-            CONCAT(
-                'Nombre: ', QUOTENAME(d.Nombre, '"'),
-                ', Apellido: ', QUOTENAME(d.Apellido, '"'),
-                ', FechaNacimiento: ', CONVERT(NVARCHAR, d.FechaNacimiento, 120),
-                ', IdSexo: ', d.IdSexo,
-                ', IdRole: ', d.IdRole,
-                ', IdGrado: ', d.IdGrado,
-                ', IdTurno: ', d.IdTurno,
-                ', IdEncargado: ', d.IdEncargado,
-                ', IdTipoDocumento: ', d.IdTipoDocumento,
-                ', NumDocumento: ', QUOTENAME(d.NumDocumento, '"'),
-                ', EsBecado: ', d.EsBecado,
-                ', IdPadrino: ', COALESCE(CONVERT(NVARCHAR, d.IdPadrino), 'NULL') -- Manejo de NULL para IdPadrino
-            ) AS Detalles
+            (SELECT 
+                'Operacion' AS TipoOperacion,
+                GETDATE() AS FechaHora,
+                d.IdAdministrador AS Usuario,
+                (SELECT 
+                    d.Nombre AS Nombre,
+                    d.Apellido AS Apellido,
+                    d.FechaNacimiento AS FechaNacimiento,
+                    d.IdSexo AS Sexo,
+                    d.IdRole AS Role,
+                    d.IdGrado AS Grado,
+                    d.IdTurno AS Turno,
+                    d.IdEncargado AS Encargado,
+                    d.IdTipoDocumento AS TipoDocumento,
+                    d.NumDocumento AS NumeroDocumento,
+                    d.EsBecado AS Becado,
+                    COALESCE(d.IdPadrino, NULL) AS Padrino
+                 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS Detalles
+             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)
         FROM Deleted d;
     END
 END;

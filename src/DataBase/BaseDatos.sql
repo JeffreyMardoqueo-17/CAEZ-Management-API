@@ -164,31 +164,46 @@ CREATE TABLE AuditoriaAlumno (
 );
 GO
 
--- TABLA Pago
+-- Tabla principal para registrar un pago global
 CREATE TABLE Pago (
-    Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
-    IdAlumno INT NOT NULL FOREIGN KEY REFERENCES Alumno(Id),
-    FechaPago DATETIME NOT NULL,
-    IdTipoPago INT NOT NULL FOREIGN KEY REFERENCES TipoPago(Id),
-    Cantidad DECIMAL(10,2) NOT NULL,
-    MultaRetrazo DECIMAL(10,2) NOT NULL DEFAULT 0,
-    PorcentajeDescuento DECIMAL(5,2) NOT NULL DEFAULT 0,
-    TotalPagar AS (Cantidad + MultaRetrazo - (Cantidad * (PorcentajeDescuento / 100))),
-    IdAdministrador INT NOT NULL FOREIGN KEY REFERENCES [User](Id),
-    Descripcion VARCHAR(200) NOT NULL,
-    IdEstadoPago INT NOT NULL DEFAULT 1 FOREIGN KEY REFERENCES EstadoPago(Id) -- Estado de pago general
+    Id INT NOT NULL PRIMARY KEY IDENTITY(1,1), -- Identificador único del pago
+    IdAlumno INT NOT NULL FOREIGN KEY REFERENCES Alumno(Id), -- Alumno que realiza el pago
+    FechaPago DATETIME NOT NULL, -- Fecha en que se realiza el pago
+    TotalPagar DECIMAL(10,2) NOT NULL, -- Total calculado del pago realizado
+    IdAdministrador INT NOT NULL FOREIGN KEY REFERENCES [User](Id), -- Administrador que registró el pago
+    Descripcion VARCHAR(200) NOT NULL, -- Descripción general del pago (Ej.: "Pago de matrícula y 2 mensualidades")
+    IdEstadoPago INT NOT NULL DEFAULT 1 FOREIGN KEY REFERENCES EstadoPago(Id), -- Estado del pago global (Pendiente, Pagado, etc.)
+    EsAnulado BIT NOT NULL DEFAULT 0, -- Indica si el pago fue anulado
+    FechaAnulacion DATETIME NULL -- Fecha de anulación, en caso de que el pago sea cancelado
 );
 GO
 
--- TABLA PagoMes (Relación entre Pago y Mes, con estado)
-CREATE TABLE PagoMes (
-    Id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
-    IdPago INT NOT NULL FOREIGN KEY REFERENCES Pago(Id),
-    IdMes INT NOT NULL FOREIGN KEY REFERENCES Mes(Id),
-    Anio INT NOT NULL,
-    IdEstadoPago INT NOT NULL DEFAULT 1 FOREIGN KEY REFERENCES EstadoPago(Id) -- Estado específico del mes, por ejemplo, 'Pendiente' o 'Pagado'
+-- Tabla que detalla los componentes individuales de un pago global
+CREATE TABLE PagoDetalle (
+    Id INT NOT NULL PRIMARY KEY IDENTITY(1,1), -- Identificador único del detalle de pago
+    IdPago INT NOT NULL FOREIGN KEY REFERENCES Pago(Id), -- Relación con el pago global
+    IdTipoPago INT NOT NULL FOREIGN KEY REFERENCES TipoPago(Id), -- Tipo de pago (Matrícula, Mensualidad, etc.)
+    IdMes INT NULL FOREIGN KEY REFERENCES Mes(Id), -- Mes al que corresponde el pago (NULL si es matrícula)
+    Anio INT NULL, -- Año del mes relacionado (NULL si no aplica)
+    CantidadBase DECIMAL(10,2) NOT NULL, -- Monto base antes de aplicar descuentos o multas
+    PorcentajeDescuento DECIMAL(5,2) NOT NULL DEFAULT 0, -- Porcentaje de descuento aplicado
+    MultaRetrazo DECIMAL(10,2) NOT NULL DEFAULT 0, -- Multa aplicada por retraso
+    -- Nota: CantidadFinal ya no es una columna calculada
+    Descripcion VARCHAR(200) NOT NULL -- Detalle adicional del pago (Ej.: "Pago correspondiente a Enero 2024")
 );
 GO
+
+-- Tabla que registra la relación entre meses y pagos realizados
+CREATE TABLE PagoMes (
+    Id INT NOT NULL PRIMARY KEY IDENTITY(1,1), -- Identificador único del registro
+    IdPagoDetalle INT NOT NULL FOREIGN KEY REFERENCES PagoDetalle(Id), -- Relación con el detalle del pago
+    IdMes INT NOT NULL FOREIGN KEY REFERENCES Mes(Id), -- Mes relacionado al pago
+    Anio INT NOT NULL, -- Año relacionado al pago
+    IdEstadoPago INT NOT NULL DEFAULT 1 FOREIGN KEY REFERENCES EstadoPago(Id) -- Estado del mes pagado (Pendiente, Pagado, Retrasado)
+);
+GO
+
+
 
 -- TABLA AuditLog
 CREATE TABLE AuditLog (
